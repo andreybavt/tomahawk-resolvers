@@ -5,7 +5,7 @@
  *
  */
 
-var ProstopleerResolver = Tomahawk.extend( Tomahawk.Resolver, {
+var ProstopleerResolver = Tomahawk.extend(Tomahawk.Resolver, {
     apiVersion: 0.9,
 
     settings: {
@@ -18,15 +18,15 @@ var ProstopleerResolver = Tomahawk.extend( Tomahawk.Resolver, {
 
     _convertTrack: function (entry) {
         return {
-            artist:     entry.artist,
-            track:      entry.track,
-            title:      entry.track,
-            size:       entry.size,
-            duration:   entry.length,
-            bitrate:    parseInt(entry.bitrate.split(' ')[0]),
-            url:        entry.file,
-            checked:    true,
-            type:       "track",
+            artist: entry.artist,
+            track: entry.track,
+            title: entry.track,
+            size: entry.size,
+            duration: entry.length,
+            bitrate: parseInt(entry.bitrate.split(' ')[0]),
+            url: entry.file,
+            checked: true,
+            type: "track",
         };
     },
 
@@ -35,14 +35,14 @@ var ProstopleerResolver = Tomahawk.extend( Tomahawk.Resolver, {
 
         var query = params.query.replace(/\ /g, '+');
 
-        return Tomahawk.get("http://pleer.com/browser-extension/search?q=" + query).then(function (response){
+        return Tomahawk.get("http://pleer.com/browser-extension/search?q=" + query).then(function (response) {
             return response.tracks.map(that._convertTrack, that);
         });
     },
 
     resolve: function (params) {
-        var query = [ params.artist, params.track ].join(' - ');
-        return this.search({query:query});
+        var query = [ encodeURIComponent(params.artist), encodeURIComponent(params.track) ].join(' - ');
+        return this.search({query: query});
     }
 });
 
