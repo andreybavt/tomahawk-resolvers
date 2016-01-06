@@ -26,7 +26,7 @@ var SoundcloudResolver = Tomahawk.extend(Tomahawk.Resolver, {
 
     echonestClientId: "JRIHWEP6GPOER2QQ6",
 
-    baseUrl: "https://api.soundcloud.com/",
+    baseUrl: "https://api-v2.soundcloud.com/search",
 
     settings: {
         name: 'SoundCloud',
@@ -115,32 +115,38 @@ var SoundcloudResolver = Tomahawk.extend(Tomahawk.Resolver, {
 
         var that = this;
 
-        var url = this.baseUrl + "tracks.json";
+        var url = this.baseUrl;
+
         var settings = {
             data: {
-                consumer_key: this.soundcloudClientId,
-                filter: "streamable",
-                limit: 20,
-                q: [artist, track].join(" ")
+                q: [artist, track].join(" "),
+                queries_limit: 0,
+                results_limit: 10,
+                limit: 10,
+                offset: 0,
+                linked_partitioning: 1,
+                client_id: this.soundcloudClientId
             }
         };
         return Tomahawk.get(url, settings).then(function (response) {
             var results = [];
-            for (var i = 0; i < response.length; i++) {
+            for (var i = 0; i < response.collection.length; i++) {
                 // Check if the title-string contains the track name we are looking for. Also check
                 // if the artist name can be found in either the title-string or the username. Last
                 // but not least we make sure that we only include covers/remixes and live versions
                 // if the user wants us to.
-                if (!response[i] || !response[i].title
-                    || (response[i].title.toLowerCase().indexOf(artist.toLowerCase()) < 0
-                    && response[i].user.username.toLowerCase().indexOf(artist.toLowerCase()) < 0)
-                    || response[i].title.toLowerCase().indexOf(track.toLowerCase()) < 0
-                    || !that._isValidTrack(response[i].title, track)) {
+                var currentResponse = response.collection[i];
+                //if (!currentResponse || !currentResponse.title
+                //    || (currentResponse.title.toLowerCase().indexOf(artist.toLowerCase()) < 0)
+                //    || currentResponse.title.toLowerCase().indexOf(track.toLowerCase()) < 0
+                //    || !that._isValidTrack(currentResponse.title, track)) {
+                //    continue;
+                //}
+                if (currentResponse.kind !== 'track'){
                     continue;
                 }
-
-                var guessedMetaData = that._guessMetaData(response[i].title);
-                var title = guessedMetaData ? guessedMetaData.track : response[i].title;
+                var guessedMetaData = that._guessMetaData(currentResponse.title);
+                var title = guessedMetaData ? guessedMetaData.track : currentResponse.title;
 
                 var result = {
                     track: title,
@@ -148,12 +154,13 @@ var SoundcloudResolver = Tomahawk.extend(Tomahawk.Resolver, {
                     bitrate: 128,
                     mimetype: "audio/mpeg",
                     source: that.settings.name,
-                    duration: response[i].duration / 1000,
-                    year: response[i].release_year,
-                    url: response[i].stream_url + ".json?client_id=" + that.soundcloudClientId
+                    duration: currentResponse.duration / 1000,
+                    year: currentResponse.release_year,
+                    url: currentResponse.uri + "/stream.json?client_id=" + that.soundcloudClientId
                 };
-                if (response[i].permalink_url) {
-                    result.linkUrl = response[i].permalink_url;
+
+                if (currentResponse.permalink_url) {
+                    result.linkUrl = currentResponse.permalink_url;
                 }
                 results.push(result);
             }
